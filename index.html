@@ -3,827 +3,891 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 倫理審驗中心 - 實現可信賴的 AI</title>
-    <!-- 引入 Tailwind CSS CDN -->
+    <title>AI 倫理審驗中心</title>
+    <!-- 載入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 配置 Tailwind 以使用 'Inter' 字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Noto+Sans+TC:wght@100..900&display=swap');
         body {
-            font-family: 'Noto Sans TC', 'Inter', sans-serif;
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc;
         }
-        /* 自定義顏色和圓角 */
-        .rounded-xl { border-radius: 1rem; }
-        .rounded-2xl { border-radius: 1.5rem; }
-        /* 流程圖時間軸樣式調整 */
-        .timeline-item-right {
-            justify-content: flex-end;
+        .nav-link {
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: background-color 0.2s, color 0.2s;
+            color: #333;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            background-color: #e0e7ff;
+            color: #4f46e5;
+        }
+        .active-tab {
+            background-color: #4f46e5;
+            color: white;
+            font-weight: 600;
+        }
+        .active-tab:hover {
+            background-color: #4338ca;
+            color: white;
+        }
+        .content-section {
+            min-height: 80vh;
+            display: none;
+        }
+        /* 避免在表格中換行，保持資料庫結構的整潔 */
+        .no-wrap {
+            white-space: nowrap;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            margin: 2px 4px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .srai-phase-card {
+            border-left-width: 4px;
+            transition: all 0.3s ease;
+        }
+        .srai-phase-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        /* Custom input for aesthetics */
+        .form-input {
+            margin-top: 4px;
+            display: block;
+            width: 100%;
+            border-radius: 0.375rem; /* rounded-md */
+            border: 1px solid #d1d5db; /* border-gray-300 */
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+            padding: 8px 12px;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .form-input:focus {
+            border-color: #4f46e5; /* indigo-600 */
+            outline: 0;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2); /* ring-indigo-500 */
+        }
+        /* Landing Page Hero Pattern */
+        .hero-bg {
+            background-image: radial-gradient(#4f46e5 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .math-code {
+            background-color: #f3f4f6; /* bg-gray-100 */
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            display: block;
+            margin-top: 4px;
+            font-size: 0.9rem;
         }
     </style>
-    <script>
-        // JavaScript 函數用於切換頁面
-        function showPage(pageId) {
-            // 隱藏所有頁面內容
-            document.querySelectorAll('.page-content').forEach(section => {
-                section.classList.add('hidden');
-            });
-            // 顯示請求的頁面
-            const targetPage = document.getElementById(pageId);
-            if (targetPage) {
-                targetPage.classList.remove('hidden');
-                // 更新導航列的活躍狀態
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    link.classList.remove('border-b-4', 'border-blue-500', 'text-blue-600', 'font-semibold');
-                    link.classList.add('text-gray-600', 'hover:text-blue-500');
-                });
-                const activeLink = document.querySelector(`.nav-link[onclick*='${pageId}']`);
-                if (activeLink) {
-                    activeLink.classList.add('border-b-4', 'border-blue-500', 'text-blue-600', 'font-semibold');
-                    activeLink.classList.remove('text-gray-600', 'hover:text-blue-500');
-                }
-                // 讓頁面滾動到頂部
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        }
-
-        // 整合自文件 Section I: 審查範圍 - 五大高風險應用場景 (模擬 MIT AIR 結構)
-        const riskData = [
-            { case_id: 'Edu-001', incident_title: '個人化學習系統監控', domain: '教育/兒童', date: '2025-06-15', risk_category: '偏見與公平性、隱私侵犯', harm_type: '學習機會不均、心理壓力', mitigation_focus: '演算法公平性、數據收集合法性', severity: '極高' },
-            { case_id: 'HR-002', incident_title: '升學志願推薦系統偏差', domain: '人力資源/教育', date: '2024-11-20', risk_category: '分類偏誤、決策不透明', harm_type: '限制多元發展、分類不公', mitigation_focus: '決策可解釋性、多元選項保留', severity: '高' },
-            { case_id: 'Care-003', incident_title: '高齡AI健康監測誤判', domain: '健康照護/高齡', date: '2025-01-10', risk_category: '資料安全、建議準確性', harm_type: '敏感資料外洩、誤導致健康風險', mitigation_focus: '個資保護、系統準確性評估', severity: '極高' },
-            { case_id: 'Fin-004', incident_title: '智能投資顧問透明度不足', domain: '金融服務/銀髮', date: '2024-08-05', risk_category: '透明度不足、詐騙防護', harm_type: '經濟損失、投資誤導', mitigation_focus: '詐騙偵測準確性、介面可及性', severity: '高' },
-            { case_id: 'Gov-005', incident_title: '福利資格AI審核不公', domain: '公共服務/社會福利', date: '2025-03-22', risk_category: '模型偏誤、歧視結果', harm_type: '人權侵犯、不公平決策', mitigation_focus: '決策透明與人工覆核、偏誤監控', severity: '極高' },
-        ];
-
-        // 整合自上傳文件的 AI 法規數據
-        const lawData = [
-            { id: 101, name: '歐盟人工智慧法案 (EU AI Act)', date: '2024-05-21', scope: '歐盟（法律約束力）', context: '採風險分級（高/有限/最低），全球首個全面性AI法案，保障基本人權及安全。' },
-            { id: 102, name: '美國 AI 權利法案藍圖', date: '2023-01-01', scope: '美國聯邦（指導原則）', context: '非約束性原則，強調非歧視性及問責制，鼓勵企業自願遵循最佳實踐。' },
-            { id: 103, name: '中國 生成式AI管理暫行辦法', date: '2023-08-15', scope: '中國大陸（生成式AI）', context: '針對演算法推薦、深度合成技術等提供具體且強制性的法規，側重內容審核與國家控制。' },
-            { id: 104, name: '越南 數位技術產業法 (DTI Law)', date: '2025-06-14', scope: '越南（AI開發與部署）', context: '採高風險/高影響分級，明確規定開發者與部署者的責任，旨在追趕東協技術領先。' },
-            { id: 105, name: '印度 數位個人資料保護法 (DPDP Act)', date: '2023-08-11', scope: '印度（資料隱私與保護）', context: '國家級資料保護框架，影響所有使用個人資料的AI系統，特別是人才招募領域。' },
-            { id: 106, name: '歐洲理事會 AI框架公約', date: '2024-05-17', scope: '國際條約（法律約束力）', context: '第一個具法律約束力的國際AI公約，確保AI發展與使用符合人權、民主和法治原則。' },
-            { id: 107, name: 'G7 廣島AI進程', date: '2023-10-30', scope: '國際（自願準則）', context: '推動國際間自願性的 AI 行為準則，鼓勵輕觸式監管及產業最佳實踐，以平衡創新與安全。' },
-            { id: 108, name: '台灣 人工智慧基本法草案', date: '2024-07-15', scope: '台灣（草案）', context: '旨在促進AI研發與應用，建立友善環境。著作權、個資等細節需回歸現行法規。' },
-            { id: 109, name: '日本 著作權法（AI學習例外）', date: '2019-01-01', scope: '日本（著作權法）', context: '擴大AI利用既有著作之自由空間（合理使用），為資訊分析提供便利，但仍有不當損害利益之限制。' },
-            { id: 110, name: '歐盟 AI Act - 監管沙盒機制', date: '2024-05-21', scope: '歐盟（創新測試）', context: '允許在受控環境下，對特定AI系統暫時性放寬GDPR限制，以利技術研發和測試。' },
-            { id: 111, name: '歐盟 AI Act - 情緒AI（EAI）禁用', date: '2024-05-21', scope: '歐盟（倫理限制）', context: '明文禁止EAI在教育及工作場域應用，因其缺乏科學基礎且可能造成歧視。' },
-            { id: 112, name: 'AI 生成發明與專利改革', date: '2023-12-22', scope: '國際專利法制探討', context: '探討AI發明人資格（DABUS 爭議），多國駁回。需改革專利法制以防PHOSITA標準升高。' },
-        ];
-        
-        // --- 公平性檢定模擬資料與函式 (新加入) ---
-
-        // Mock data for fairness check results
-        const mockFairnessMetrics = {
-            total_samples: 1000,
-            privileged_n: 700,
-            unprivileged_n: 300,
-            privileged_favorable: 400, // P_priv = 400/700 ≈ 0.57
-            unprivileged_favorable: 100, // P_unpriv = 100/300 ≈ 0.33
-            fnr_privileged: 0.1, // Mock False Negative Rate for privileged group
-            fnr_unprivileged: 0.2, // Mock False Negative Rate for unprivileged group
-        };
-
-        window.handleFileUpload = function() {
-            // Placeholder for file upload logic
-            alert('步驟 1: 數據模擬載入成功 (共 1000 筆紀錄)。請進行步驟 2 和 3。');
-            const statusElement = document.getElementById('upload-status');
-            if (statusElement) {
-                statusElement.classList.remove('hidden');
-            }
-        };
-
-        window.runFairnessCheck = function() {
-            alert('步驟 3: 執行公平性與偏差檢定 已觸發。'); // Debug prompt
-
-            const resultsContainer = document.getElementById('fairness-results-container');
-            const biasTableBody = document.getElementById('bias-table-body');
-            const metricsTableBody = document.getElementById('metrics-table-body');
-            
-            // 確保元素存在
-            if (!resultsContainer || !biasTableBody || !metricsTableBody) {
-                 alert('錯誤: 無法找到檢定結果容器。');
-                 return;
-            }
-            
-            // 取得下拉選單文字值
-            const privilegedGroupText = document.getElementById('privileged-group').options[document.getElementById('privileged-group').selectedIndex].text;
-            const unprivilegedGroupText = document.getElementById('unprivileged-group').options[document.getElementById('unprivileged-group').selectedIndex].text;
-
-
-            // 1. Calculate Metrics (Mock Logic)
-            const P_priv = mockFairnessMetrics.privileged_favorable / mockFairnessMetrics.privileged_n; 
-            const P_unpriv = mockFairnessMetrics.unprivileged_favorable / mockFairnessMetrics.unprivileged_n; 
-            
-            // DIR Calculation
-            let dir = P_unpriv / P_priv;
-            dir = dir.toFixed(3); // 0.578
-            const dirJudgment = dir < 0.8 ? '🚨 不公平 (低於 0.8)' : '✅ 公平';
-            const dirColor = dir < 0.8 ? 'text-red-600' : 'text-green-600';
-
-            // EOD Calculation (Mocked based on FNR diff)
-            let eod = Math.abs(mockFairnessMetrics.fnr_unprivileged - mockFairnessMetrics.fnr_privileged);
-            eod = eod.toFixed(3); // 0.1
-            const eodJudgment = eod > 0.05 ? '⚠️ 需注意 (大於 0)' : '✅ 理想';
-            const eodColor = eod > 0.05 ? 'text-orange-600' : 'text-green-600';
-
-            // DPD Calculation 
-            let dpd = Math.abs(P_priv - P_unpriv);
-            dpd = dpd.toFixed(3); // 0.24
-            const dpdJudgment = dpd > 0.2 ? '🚨 嚴重偏差' : '⚠️ 輕微偏差';
-            const dpdColor = dpd > 0.2 ? 'text-red-600' : 'text-orange-600';
-
-            // 2. Render Bias Table
-            biasTableBody.innerHTML = `
-                <tr><td>優勢群體 (${privilegedGroupText})</td><td>${mockFairnessMetrics.privileged_n}</td><td class="text-green-600">${(mockFairnessMetrics.privileged_n / mockFairnessMetrics.total_samples * 100).toFixed(1)}%</td></tr>
-                <tr><td>弱勢群體 (${unprivilegedGroupText})</td><td>${mockFairnessMetrics.unprivileged_n}</td><td class="text-red-600">${(mockFairnessMetrics.unprivileged_n / mockFairnessMetrics.total_samples * 100).toFixed(1)}%</td></tr>
-            `;
-
-            // 3. Render Metrics Table
-            metricsTableBody.innerHTML = `
-                <tr><td>差異影響比率 (DIR)</td><td class="font-mono ${dirColor}">${dir}</td><td class="${dirColor} font-bold">${dirJudgment}</td></tr>
-                <tr><td>機會均等距離 (EOD)</td><td class="font-mono ${eodColor}">${eod}</td><td class="${eodColor} font-bold">${eodJudgment}</td></tr>
-                <tr><td>人口統計對等距離 (DPD)</td><td class="font-mono ${dpdColor}">${dpd}</td><td class="${dpdColor} font-bold">${dpdJudgment}</td></tr>
-            `;
-
-            // 4. Show Results
-            resultsContainer.classList.remove('hidden');
-            
-            // 5. Update CSS-based Gauge for DIR
-            const dirGauge = document.getElementById('dir-gauge');
-            if (dirGauge) {
-                // Calculate percentage width for DIR (0.578 * 100 = 57.8%)
-                const dirPercentage = (dir * 100).toFixed(1);
-                dirGauge.style.width = `${dirPercentage}%`;
-                // Change gauge color based on judgment
-                dirGauge.classList.remove('bg-red-600', 'bg-green-600');
-                if (dir < 0.8) {
-                    dirGauge.classList.add('bg-red-600');
-                } else {
-                    dirGauge.classList.add('bg-green-600');
-                }
-            }
-
-
-            alert('檢定結果已生成。請查看下方表格。');
-        }
-        
-        // --- Navigation and Database Initialization ---
-
-        function renderDatabase(tableId, data) {
-            const tableBody = document.getElementById(tableId);
-            if (!tableBody) return;
-            tableBody.innerHTML = '';
-            data.forEach(item => {
-                const row = document.createElement('tr');
-                row.className = 'border-b hover:bg-gray-50';
-                
-                if (tableId === 'risk-db-table') {
-                    // Risk DB rendering logic
-                    
-                    let severityColor = 'bg-green-100 text-green-800';
-                    if (item.severity === '高') severityColor = 'bg-yellow-100 text-yellow-800';
-                    if (item.severity === '極高') severityColor = 'bg-red-100 text-red-800';
-
-                    // Use space as separator for splitting risk_category
-                    const riskCategories = item.risk_category.split('、').map((cat, index) => {
-                        const baseColor = index % 2 === 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-800';
-                        return `<span class="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${baseColor} mr-1">${cat}</span>`;
-                    }).join('');
-                    
-                    row.innerHTML = `
-                        <td class="p-4 text-sm font-medium text-gray-900">${item.case_id}</td>
-                        <td class="p-4 text-sm text-gray-700 font-medium">${item.incident_title}</td>
-                        <td class="p-4 text-sm text-gray-700">${item.domain}</td>
-                        <td class="p-4 text-sm text-gray-700">${item.date}</td>
-                        <td class="p-4 text-sm text-gray-700">${riskCategories}</td>
-                        <td class="p-4 text-sm text-gray-700">${item.harm_type}</td>
-                        <td class="p-4 text-sm text-gray-700">
-                            <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${severityColor}">
-                                ${item.severity}
-                            </span>
-                        </td>
-                        <td class="p-4 text-sm text-blue-600 cursor-pointer hover:underline" onclick="alert('緩解重點：${item.mitigation_focus}')">查看詳情</td>
-                    `;
-                } else if (tableId === 'law-db-table') {
-                    // Law DB rendering logic
-                    row.innerHTML = `
-                        <td class="p-4 text-sm font-medium text-gray-900">${item.id}</td>
-                        <td class="p-4 text-sm text-gray-700 font-medium">${item.name}</td>
-                        <td class="p-4 text-sm text-gray-700">${item.date}</td>
-                        <td class="p-4 text-sm text-gray-700">${item.scope}</td>
-                        <td class="p-4 text-sm text-gray-700 max-w-xs truncate" title="${item.context}">
-                            ${item.context}
-                        </td>
-                        <td class="p-4 text-sm text-green-600 cursor-pointer hover:underline">下載文件</td>
-                    `;
-                }
-                tableBody.appendChild(row);
-            });
-        }
-
-        // 模擬搜尋和篩選功能 (保持不變)
-        function searchDatabase(dbType) {
-            const query = document.getElementById(`${dbType}-search`).value.toLowerCase();
-            let data = dbType === 'risk' ? riskData : lawData;
-
-            const filteredData = data.filter(item => {
-                // Determine search fields based on database type
-                let searchFields;
-                if (dbType === 'risk') {
-                    // Search using the new field names
-                    searchFields = [item.incident_title, item.domain, item.risk_category, item.harm_type];
-                } else { // law
-                    searchFields = [item.name, item.scope, item.context];
-                }
-                return searchFields.some(field => field.toLowerCase().includes(query));
-            });
-
-            const tableId = dbType === 'risk' ? 'risk-db-table' : 'law-db-table';
-            renderDatabase(tableId, filteredData);
-
-            // 顯示結果數量 (模擬)
-            const resultCountElement = document.getElementById(`${dbType}-result-count`);
-            if (resultCountElement) {
-                resultCountElement.textContent = `找到 ${filteredData.length} 筆資料。`;
-            }
-        }
-
-        // 頁面加載完成後顯示首頁
-        window.onload = () => {
-            showPage('home');
-            // 渲染資料庫表格
-            renderDatabase('risk-db-table', riskData);
-            renderDatabase('law-db-table', lawData);
-        };
-    </script>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="p-4 md:p-8">
 
-    <!-- 頂部導覽列 (已新增「公平性檢定」) -->
-    <header class="bg-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
-                <!-- Logo / 標題 -->
-                <div class="flex-shrink-0">
-                    <span class="text-3xl font-extrabold text-blue-700 tracking-wider">
-                        AI 倫理審驗中心
-                    </span>
-                </div>
-                <!-- 導航連結 -->
-                <nav class="hidden md:flex space-x-8">
-                    <a href="#" onclick="showPage('home')" class="nav-link text-lg px-2 pt-1 border-b-4 border-transparent hover:border-blue-500 transition duration-150 ease-in-out">首頁</a>
-                    <a href="#" onclick="showPage('ethics')" class="nav-link text-lg px-2 pt-1 border-b-4 border-transparent hover:border-blue-500 transition duration-150 ease-in-out">AI 倫理</a>
-                    <a href="#" onclick="showPage('process')" class="nav-link text-lg px-2 pt-1 border-b-4 border-transparent hover:border-blue-500 transition duration-150 ease-in-out">審驗流程</a>
-                    <a href="#" onclick="showPage('application')" class="nav-link text-lg px-2 pt-1 border-b-4 border-transparent hover:border-blue-500 transition duration-150 ease-in-out">審查申請</a>
-                    <a href="#" onclick="showPage('risk-db')" class="nav-link text-lg px-2 pt-1 border-b-4 border-transparent hover:border-blue-500 transition duration-150 ease-in-out">風險資料庫</a>
-                    <a href="#" onclick="showPage('law-db')" class="nav-link text-lg px-2 pt-1 border-b-4 border-transparent hover:border-blue-500 transition duration-150 ease-in-out">法規資料庫</a>
-                    <a href="#" onclick="showPage('fairness-check')" class="nav-link text-lg px-2 pt-1 border-b-4 border-transparent hover:border-purple-500 transition duration-150 ease-in-out">公平性檢定</a>
-                </nav>
-                <!-- 行動裝置選單按鈕 (簡化, 僅展示結構) -->
-                <div class="md:hidden">
-                    <button class="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 p-2 rounded-md">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-                    </button>
-                </div>
-            </div>
+    <!-- Header and Navigation -->
+    <header class="bg-white shadow-lg rounded-xl p-4 mb-8 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
+            <h1 class="text-3xl font-extrabold text-gray-800 no-wrap cursor-pointer" onclick="showPage('landing')">
+                AI 倫理審驗中心 
+            </h1>
+            <nav class="flex flex-wrap justify-center gap-2 text-sm md:text-base">
+                <a class="nav-link" href="#" data-page="landing">首頁</a>
+                <a class="nav-link" href="#" data-page="ethics">AI 倫理</a>
+                <a class="nav-link" href="#" data-page="process">審驗流程</a>
+                <a class="nav-link" href="#" data-page="application">審查申請</a>
+                <a class="nav-link" href="#" data-page="risk-db">風險資料庫</a>
+                <a class="nav-link" href="#" data-page="law-db">法規資料庫</a>
+                <a class="nav-link" href="#" data-page="fairness-check">公平性檢定</a>
+            </nav>
         </div>
     </header>
 
-    <!-- 主要內容區域 -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Content Area -->
+    <main class="max-w-7xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-2xl">
 
-        <!-- 首頁 (Home) - 保持不變 -->
-        <section id="home" class="page-content hidden">
-            <div class="bg-blue-600 text-white p-16 rounded-3xl shadow-2xl mb-12">
-                <h1 class="text-5xl font-extrabold mb-4">保障 AI 發展，成就可信未來。</h1>
-                <p class="text-xl opacity-90 mb-8"></p>
-                <button onclick="showPage('application')" class="bg-white text-blue-600 px-8 py-3 text-lg font-bold rounded-full hover:bg-gray-100 transition shadow-md transform hover:scale-105">
-                    立即申請審查
-                </button>
+        <!-- 0. 首頁 (Landing Page) -->
+        <section id="landing" class="content-section" style="display: block;">
+            <!-- Hero Section -->
+            <div class="bg-gradient-to-r from-indigo-600 to-blue-500 rounded-3xl p-10 md:p-20 text-center text-white shadow-2xl mb-16 relative overflow-hidden">
+                <div class="absolute inset-0 hero-bg opacity-10"></div>
+                <div class="relative z-10">
+                    <h2 class="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight">推動負責任 AI，<br>成就永續未來</h2>
+                    <p class="text-lg md:text-xl text-indigo-100 mb-10 max-w-2xl mx-auto">我們致力於建構安全、透明且負責任的人工智慧生態系，為您的創新保駕護航。</p>
+                    <button onclick="window.showPage('application')" class="bg-white text-indigo-600 font-bold py-3 px-8 rounded-full shadow-lg hover:bg-indigo-50 hover:scale-105 transition transform duration-200 text-lg">
+                        立即申請審查
+                    </button>
+                </div>
             </div>
 
-            <div class="grid md:grid-cols-3 gap-8">
-                <!-- 核心服務卡片 (保持不變) -->
-                <div class="bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition duration-300">
-                    <div class="text-blue-500 mb-4">
-                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.009 12.009 0 002 12c0 2.514.88 4.887 2.454 6.702l.656.745c.813.924 1.932 1.487 3.14 1.554C11.365 21 12 20.365 12 19.5V12"></path></svg>
+            <!-- Features Grid -->
+            <div class="grid md:grid-cols-3 gap-8 mb-12">
+                <!-- Feature 1 -->
+                <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-lg hover:shadow-xl transition duration-300 flex flex-col items-center text-center group">
+                    <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-3xl mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                        ⚖️
                     </div>
-                    <h3 class="text-2xl font-bold mb-3">專業審驗</h3>
-                    <p class="text-gray-600">依據國際標準，為您的 AI 專案提供公正、深入的倫理評估報告。</p>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">專業審驗</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        依據國際標準，為您的 AI 專案提供公正、深入的倫理評估報告。
+                    </p>
                 </div>
-                <div class="bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition duration-300">
-                    <div class="text-blue-500 mb-4">
-                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+
+                <!-- Feature 2 -->
+                <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-lg hover:shadow-xl transition duration-300 flex flex-col items-center text-center group">
+                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-3xl mb-6 group-hover:bg-red-500 group-hover:text-white transition-colors duration-300">
+                        🚨
                     </div>
-                    <h3 class="text-2xl font-bold mb-3">風險洞察</h3>
-                    <p class="text-gray-600">存取最新的 AI 風險案例資料庫，預測並減輕潛在的社會與技術危害。</p>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">風險洞察</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        存取最新的 AI 風險案例資料庫，預測並減輕潛在的社會與技術危害。
+                    </p>
                 </div>
-                <div class="bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition duration-300">
-                    <div class="text-blue-500 mb-4">
-                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.417 9.532 5 8 5c-4 0-5 3-5 5.5s1 4.5 5 4.5c1.472 0 2.783-.414 3.914-1.127M12 6.253c1.168.836 2.468 1.583 4 1.583c4 0 5-3 5-5.5S19 2 15 2c-1.472 0-2.783.414-3.914 1.127m2.288 1.127H9.212M12 10.753v9m0-9c1.168.836 2.468 1.583 4 1.583c4 0 5-3 5-5.5S19 2 15 2c-1.472 0-2.783.414-3.914 1.127"></path></svg>
+
+                <!-- Feature 3 -->
+                <div class="bg-white p-8 rounded-2xl border border-gray-100 shadow-lg hover:shadow-xl transition duration-300 flex flex-col items-center text-center group">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-3xl mb-6 group-hover:bg-green-600 group-hover:text-white transition-colors duration-300">
+                        📜
                     </div>
-                    <h3 class="text-2xl font-bold mb-3">法規遵循</h3>
-                    <p class="text-gray-600">追蹤全球 AI 法規動態，提供最即時的法規遵循建議與資料。</p>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">法規遵循</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        追蹤全球 AI 法規動態，提供最即時的法規遵循建議與資料。
+                    </p>
                 </div>
             </div>
         </section>
 
-        <!-- 1. AI 倫理 (Ethics) - 整合文件 Section II 的 6 大核心面向 -->
-        <section id="ethics" class="page-content hidden">
-            <h2 class="text-4xl font-extrabold text-gray-900 mb-8 border-b-2 pb-2">AI 倫理：我們的六大核心審查指標</h2>
-            <p class="text-xl mb-12 text-gray-600">本中心參考歐盟、OECD、UNESCO 及數位部建議，以六大主軸作為 AI 倫理審查之核心指標，確保 AI 發展負責任且可信賴。</p>
+        <!-- 1. AI 倫理 (SRAI Model) -->
+        <section id="ethics" class="content-section">
+            <h2 class="text-4xl font-bold text-indigo-700 mb-6 border-b-4 border-indigo-200 pb-2">AI 倫理審驗核心：SRAI 模型框架</h2>
             
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- 1. 隱私與資料治理 -->
-                <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-red-500">
-                    <h3 class="text-2xl font-bold mb-2 text-red-700">1. 隱私與資料治理</h3>
-                    <ul class="list-disc list-inside text-gray-600 text-sm space-y-1 mt-4">
-                        <li>資料是否遵守最小蒐集原則？</li>
-                        <li>資料來源是否具有偏誤？</li>
-                        <li>是否考量不同群體的代表性？</li>
-                        <li>是否具備充足的資料安全保障措施？</li>
-                    </ul>
-                </div>
-                <!-- 2. 透明性與可解釋性 -->
-                <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-yellow-500">
-                    <h3 class="text-2xl font-bold mb-2 text-yellow-700">2. 透明性與可解釋性</h3>
-                    <ul class="list-disc list-inside text-gray-600 text-sm space-y-1 mt-4">
-                        <li>模型是否可解釋？</li>
-                        <li>使用者是否清楚 AI 是如何做出決策？</li>
-                        <li>是否揭露訓練資料來源與模型邏輯？</li>
-                    </ul>
-                </div>
-                <!-- 3. 模型可靠性與安全性 -->
-                <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-green-500">
-                    <h3 class="text-2xl font-bold mb-2 text-green-700">3. 模型可靠性與安全性</h3>
-                    <ul class="list-disc list-inside text-gray-600 text-sm space-y-1 mt-4">
-                        <li>模型預測結果是否具準確性？</li>
-                        <li>是否經過壓力測試與對抗性測試？</li>
-                        <li>模型是否具備韌性（Robustness）？</li>
-                    </ul>
-                </div>
-                <!-- 4. 使用者權益與知情控制 -->
-                <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-500">
-                    <h3 class="text-2xl font-bold mb-2 text-blue-700">4. 使用者權益與知情控制</h3>
-                    <ul class="list-disc list-inside text-gray-600 text-sm space-y-1 mt-4">
-                        <li>是否有退出/拒絕使用 AI 的選項？</li>
-                        <li>是否能說明錯誤並提供救濟機制？</li>
-                        <li>對弱勢群體是否提供特別保護？</li>
-                    </ul>
-                </div>
-                <!-- 5. 結果公平性與社會影響 -->
-                <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-purple-500">
-                    <h3 class="text-2xl font-bold mb-2 text-purple-700">5. 結果公平性與社會影響</h3>
-                    <p class="text-sm text-gray-600">決策結果是否對某些群體造成系統性不利？本中心採用差異影響比率 (DIR) 等多種 **Fairness Metrics** 進行量化檢定。 </p>
-                    <p class="text-xs mt-2 text-gray-400">審查工具：AI公平性指標 (DIR, DPD, EOD) 檢測報告</p>
-                </div>
-                <!-- 6. 價值對齊與文化敏感性 -->
-                <div class="bg-white p-6 rounded-xl shadow-lg border-t-4 border-orange-500">
-                    <h3 class="text-2xl font-bold mb-2 text-orange-700">6. 價值對齊與文化敏感性</h3>
-                    <ul class="list-disc list-inside text-gray-600 text-sm space-y-1 mt-4">
-                        <li>系統設計是否考量本地社會倫理？</li>
-                        <li>是否落實社會共識與多元價值？</li>
-                        <li>利益關係人是否參與審議？</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-
-        <!-- 2. AI 倫理審驗流程 (Process) - 整合文件 Section III 的 5 大流程階段 -->
-        <section id="process" class="page-content hidden">
-            <h2 class="text-4xl font-extrabold text-gray-900 mb-8 border-b-2 pb-2">AI 倫理審查基本流程 (五大階段)</h2>
-            <p class="text-xl mb-12 text-gray-600">本審驗流程依據 AI 風險分級進行分流，確保審查資源集中於高風險應用。</p>
-
-            <!-- 流程圖 (使用 Timeline 樣式，更新為 5 階段) -->
-            <div class="relative max-w-4xl mx-auto">
-                <!-- 時間軸線 -->
-                <div class="border-l-4 border-blue-300 absolute h-full top-0 left-10 md:left-1/2 -ml-0.5"></div>
-                
-                <!-- 流程步驟 1: 初始申請 -->
-                <div class="mb-10 flex justify-between items-center w-full right-timeline">
-                    <div class="order-1 w-5/12 hidden md:block"></div>
-                    <div class="z-10 flex items-center order-1 bg-blue-500 shadow-xl w-10 h-10 rounded-full">
-                        <h1 class="mx-auto font-semibold text-lg text-white">1</h1>
-                    </div>
-                    <div class="order-1 bg-white rounded-xl shadow-xl w-full md:w-5/12 px-6 py-4 border-2 border-blue-500">
-                        <h3 class="text-xl font-bold mb-2 text-blue-700">初始申請與文件提交</h3>
-                        <p class="text-sm leading-snug tracking-wide text-gray-600 text-opacity-100">提交 AI 系統應用範疇說明、訓練資料概述、預期目的與效益，以及 **AI 風險自我評估問卷**。</p>
-                        <p class="text-xs mt-2 text-gray-500">所需文件：AI風險自我評估問卷、訓練資料概述</p>
-                    </div>
-                </div>
-
-                <!-- 流程步驟 2: 風險分級與分流 -->
-                <div class="mb-10 flex justify-between items-center w-full left-timeline">
-                    <div class="order-1 bg-white rounded-xl shadow-xl w-full md:w-5/12 px-6 py-4 border-2 border-blue-500">
-                        <h3 class="text-xl font-bold mb-2 text-blue-700">風險分級與審查分流</h3>
-                        <p class="text-sm leading-snug tracking-wide text-gray-600 text-opacity-100">參考 **「脆弱族群AI風險資料庫」** 判定風險等級。低風險簡化審查，高風險需通過完整深度審查。</p>
-                    </div>
-                    <div class="z-10 flex items-center order-1 bg-blue-500 shadow-xl w-10 h-10 rounded-full">
-                        <h1 class="mx-auto font-semibold text-lg text-white">2</h1>
-                    </div>
-                    <div class="order-1 w-5/12 hidden md:block"></div>
-                </div>
-                
-                <!-- 流程步驟 3: 多面向審查 (模組化進行) -->
-                <div class="mb-10 flex justify-between items-center w-full right-timeline">
-                    <div class="order-1 w-5/12 hidden md:block"></div>
-                    <div class="z-10 flex items-center order-1 bg-blue-500 shadow-xl w-10 h-10 rounded-full">
-                        <h1 class="mx-auto font-semibold text-lg text-white">3</h1>
-                    </div>
-                    <div class="order-1 bg-white rounded-xl shadow-xl w-full md:w-5/12 px-6 py-4 border-2 border-blue-500">
-                        <h3 class="text-xl font-bold mb-2 text-blue-700">多面向審查（前、中、後處理）</h3>
-                        <p class="text-sm leading-snug tracking-wide text-gray-600 text-opacity-100">分為：**前處理 (資料隱私/偏見)、中處理 (模型透明性/解釋性)、後處理 (公平性量化/法遵性)** 模組化進行。</p>
-                        <p class="text-xs mt-2 text-gray-500">審查工具：隱私影響評估表、可解釋AI技術、Fairness Metrics</p>
-                    </div>
-                </div>
-
-                <!-- 流程步驟 4: 結論與回饋 -->
-                <div class="mb-10 flex justify-between items-center w-full left-timeline">
-                    <div class="order-1 bg-white rounded-xl shadow-xl w-full md:w-5/12 px-6 py-4 border-2 border-blue-500">
-                        <h3 class="text-xl font-bold mb-2 text-blue-700">結論與改善策略建議</h3>
-                        <p class="text-sm leading-snug tracking-wide text-gray-600 text-opacity-100">編製 **「AI 倫理評估報告」**。結果分類為：通過、限期改善、不建議使用。並提供資料或模型層面的調整建議。</p>
-                    </div>
-                    <div class="z-10 flex items-center order-1 bg-blue-500 shadow-xl w-10 h-10 rounded-full">
-                        <h1 class="mx-auto font-semibold text-lg text-white">4</h1>
-                    </div>
-                    <div class="order-1 w-5/12 hidden md:block"></div>
-                </div>
-
-                <!-- 流程步驟 5: 後設監督機制 -->
-                <div class="mb-10 flex justify-between items-center w-full right-timeline">
-                    <div class="order-1 w-5/12 hidden md:block"></div>
-                    <div class="z-10 flex items-center order-1 bg-blue-500 shadow-xl w-10 h-10 rounded-full">
-                        <h1 class="mx-auto font-semibold text-lg text-white">5</h1>
-                    </div>
-                    <div class="order-1 bg-white rounded-xl shadow-xl w-full md:w-5/12 px-6 py-4 border-2 border-blue-500">
-                        <h3 class="text-xl font-bold mb-2 text-blue-700">後設監督與群眾回饋</h3>
-                        <p class="text-sm leading-snug tracking-wide text-gray-600 text-opacity-100">定期追蹤實際使用報告、建立異常事件通報機制，並設立 **AI 倫理通報平台** 收集使用者回饋。</p>
-                        <p class="text-xs mt-2 text-gray-500">機制：定期追蹤、異常事件通報、公民參與監督</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. 審查申請 (Application) - 整合文件 Section III.1 的申請文件要求 -->
-        <section id="application" class="page-content hidden">
-            <h2 class="text-4xl font-extrabold text-gray-900 mb-8 border-b-2 pb-2">審查申請</h2>
-            
-            <div class="grid lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-2 bg-white p-8 rounded-2xl shadow-xl">
-                    <h3 class="text-2xl font-bold mb-6 text-blue-700">線上申請表單</h3>
-                    <p class="text-red-600 font-semibold mb-4">注意：請務必詳實填寫，此資料將用於風險分級判斷。</p>
-                    <form onsubmit="event.preventDefault(); alert('申請已提交！中心將於 3 個工作天內依據您的風險自評進行分級與流程啟動。'); showPage('home');">
-                        <div class="mb-4">
-                            <label for="applicantName" class="block text-sm font-medium text-gray-700 mb-2">申請單位名稱</label>
-                            <input type="text" id="applicantName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div class="mb-4">
-                            <label for="projectName" class="block text-sm font-medium text-gray-700 mb-2">AI 項目名稱</label>
-                            <input type="text" id="projectName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div class="mb-6">
-                            <label for="projectDesc" class="block text-sm font-medium text-gray-700 mb-2">應用領域說明 (請參照審查範圍，如：教育、高齡照護)</label>
-                            <textarea id="projectDesc" rows="4" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></textarea>
-                        </div>
-                        <div class="mb-6">
-                            <label for="riskLevel" class="block text-sm font-medium text-gray-700 mb-2">專案預估風險等級 (依據您的風險自評問卷結果選填)</label>
-                            <select id="riskLevel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                                <option>低風險 (簡化審查)</option>
-                                <option>中風險 (標準審查)</option>
-                                <option>高風險 (深度審查)</option>
-                            </select>
-                        </div>
-                        <div class="mb-4">
-                            <label for="contactEmail" class="block text-sm font-medium text-gray-700 mb-2">聯絡電子郵件</label>
-                            <input type="email" id="contactEmail" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div class="mb-6 border p-4 rounded-lg bg-gray-50">
-                            <p class="font-semibold text-gray-800 mb-2">應繳交文件 (初始申請階段)</p>
-                            <ul class="list-disc list-inside text-sm text-gray-600">
-                                <li>AI 系統應用範疇說明 (目標對象、使用情境)</li>
-                                <li>訓練資料概述 (來源、規模、處理方式)</li>
-                                <li>AI 風險自我評估問卷 (必填)</li>
-                            </ul>
-                        </div>
-                        <button type="submit" class="w-full bg-blue-600 text-white px-6 py-3 rounded-full font-bold hover:bg-blue-700 transition transform hover:-translate-y-0.5 shadow-lg">
-                            提交審查申請
-                        </button>
-                    </form>
-                </div>
-
-                <div class="bg-blue-50 p-6 rounded-2xl shadow-md border-l-4 border-blue-600 space-y-4">
-                    <h3 class="text-xl font-bold text-blue-800">審查資源下載</h3>
-                    <p class="text-gray-700">下載倫理自評問卷與文件準備範本，加速您的申請流程。</p>
-                    <a href="#" class="block text-blue-600 hover:text-blue-800 font-medium flex items-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        [PDF] AI 風險自我評估問卷
-                    </a>
-                    <a href="#" class="block text-blue-600 hover:text-blue-800 font-medium flex items-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-2 2zm0 0l5 5m-5-5h8M8 8H3"></path></svg>
-                        [DOCX] 技術文件說明範本
-                    </a>
-                    <hr>
-                    <h3 class="text-xl font-bold text-blue-800">審核進度查詢</h3>
-                    <p class="text-gray-700">輸入您的申請編號追蹤狀態。</p>
-                    <div class="flex">
-                        <input type="text" placeholder="輸入編號..." class="w-2/3 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none">
-                        <button class="w-1/3 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600" onclick="alert('查詢功能模擬：目前狀態為「階段三：多面向審查 - 模型透明性/解釋性審核中」。')">查詢</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 4. AI 風險資料庫 (Risk DB) - 整合文件 Section I 的審查範圍 -->
-        <section id="risk-db" class="page-content hidden">
-            <h2 class="text-4xl font-extrabold text-gray-900 mb-8 border-b-2 pb-2">AI 風險資料庫：高風險應用案例</h2>
-            <p class="text-xl mb-6 text-gray-600">本資料庫聚焦於對 **脆弱族群 (中小學生與高齡者)** 具潛在高風險的應用場景，模擬 MIT AIR 結構提供詳細風險分類。</p>
-
-            <!-- 搜尋與篩選 (保持不變) -->
-            <div class="flex flex-col sm:flex-row gap-4 mb-6 p-4 bg-gray-100 rounded-xl shadow-inner">
-                <input type="text" id="risk-search" onkeyup="searchDatabase('risk')" placeholder="按情境、領域、風險類別或危害類型搜尋..." class="w-full sm:w-2/3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 transition">
-                <button onclick="searchDatabase('risk')" class="w-full sm:w-1/3 bg-red-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-700 transition flex items-center justify-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    搜尋
-                </button>
-            </div>
-            <p id="risk-result-count" class="text-sm text-gray-500 mb-4">找到 5 筆資料。</p>
-
-            <!-- 風險案例表格 - 欄位已更新以匹配 MIT AIR 結構 -->
-            <div class="overflow-x-auto bg-white rounded-xl shadow-lg">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">案例編號</th>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">事件/標題</th>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">領域</th>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">發布日期</th>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">核心風險類別</th>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">危害類型</th>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">嚴重性</th>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="risk-db-table" class="bg-white divide-y divide-gray-200">
-                        <!-- 資料將由 JS 渲染 -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- 5. AI 法規資料庫 (Law DB) - 整合上傳文件中的國際法規數據 -->
-        <section id="law-db" class="page-content hidden">
-            <h2 class="text-4xl font-extrabold text-gray-900 mb-8 border-b-2 pb-2">AI 法規資料庫：國際監管框架比較</h2>
-            <p class="text-xl mb-6 text-gray-600">彙整國際與國內最新的 AI 相關法規、指導原則與政策文件，並比較其監管模式，幫助企業達成合規要求。
-                <span class="text-sm text-gray-500">（數據基於上傳的研究文件）</span>
+            <!-- SRAI Model Core Statement (No Background) -->
+            <p class="text-gray-700 text-lg mb-6">
+                本中心採用社會責任人工智慧 (Socially Responsible AI, SRAI) 模型作為 AI 倫理審核心驗架構。
             </p>
 
-            <!-- 搜尋與篩選 (保持不變) -->
-            <div class="flex flex-col sm:flex-row gap-4 mb-6 p-4 bg-gray-100 rounded-xl shadow-inner">
-                <input type="text" id="law-search" onkeyup="searchDatabase('law')" placeholder="按法規名稱、範圍或核心重點搜尋..." class="w-full sm:w-2/3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 transition">
-                <button onclick="searchDatabase('law')" class="w-full sm:w-1/3 bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition flex items-center justify-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    搜尋
-                </button>
-            </div>
-            <p id="law-result-count" class="text-sm text-gray-500 mb-4">找到 12 筆資料。</p>
+            <!-- SRAI Objectives (Top) -->
+            <div class="mb-10 bg-gradient-to-r from-gray-50 to-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">SRAI 核心目標</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    
+                    <!-- 1. 系統穩健與準確 (Be Functional) -->
+                    <div class="p-4 bg-white rounded-lg shadow-md border-t-4 border-orange-500 transform hover:-translate-y-1 transition">
+                        <div class="text-3xl mb-2">⚙️</div>
+                        <div class="font-bold text-orange-700 text-lg">系統穩健與準確<br><span class="text-sm font-normal text-gray-500">(Be Functional)</span></div>
+                    </div>
+                    
+                    <!-- 2. 符合法規與人權 (Be Lawful) -->
+                    <div class="p-4 bg-white rounded-lg shadow-md border-t-4 border-red-500 transform hover:-translate-y-1 transition">
+                        <div class="text-3xl mb-2">📜</div>
+                        <div class="font-bold text-red-700 text-lg">符合法規與人權<br><span class="text-sm font-normal text-gray-500">(Be Lawful)</span></div>
+                    </div>
+                    
+                    <!-- 3. 公平、無歧視、透明 (Be Ethical) -->
+                    <div class="p-4 bg-white rounded-lg shadow-md border-t-4 border-blue-500 transform hover:-translate-y-1 transition">
+                        <div class="text-3xl mb-2">⚖️</div>
+                        <div class="font-bold text-blue-700 text-lg">公平、無歧視、透明<br><span class="text-sm font-normal text-gray-500">(Be Ethical)</span></div>
+                    </div>
 
-            <!-- 法規清單表格 - 欄位已更新以匹配新的 lawData 結構 -->
-            <div class="overflow-x-auto bg-white rounded-xl shadow-lg">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">編號</th>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">法規名稱/文件</th>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">發布日期</th>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">適用範圍</th>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">核心重點/模型</th>
-                            <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">文件操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="law-db-table" class="bg-white divide-y divide-gray-200">
-                        <!-- 資料將由 JS 渲染 -->
-                    </tbody>
-                </table>
+                    <!-- 4. 環境與資源永續 (Be Sustainable) -->
+                    <div class="p-4 bg-white rounded-lg shadow-md border-t-4 border-green-500 transform hover:-translate-y-1 transition">
+                        <div class="text-3xl mb-2">🌍</div>
+                        <div class="font-bold text-green-700 text-lg">環境與資源永續<br><span class="text-sm font-normal text-gray-500">(Be Sustainable)</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SRAI Governance Structure (Flat/Parallel Layout) -->
+            <div class="mb-12">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">SRAI 治理架構</h3>
+                <div class="grid md:grid-cols-4 gap-4">
+                    <!-- Layer 1: Stakeholders -->
+                    <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-lg text-center shadow-sm">
+                        <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 font-bold">1</div>
+                        <div class="font-bold text-indigo-900 text-lg mb-2">利害關係人</div>
+                        <div class="text-sm text-gray-600 space-y-1">
+                            <div class="font-semibold text-indigo-500">主要</div>
+                            <div>管理者、員工、客戶</div>
+                            <div class="font-semibold text-indigo-500 mt-1">次要</div>
+                            <div>社區、環境、政府</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Layer 2: Objectives -->
+                    <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-lg text-center shadow-sm">
+                        <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 font-bold">2</div>
+                        <div class="font-bold text-indigo-900 text-lg mb-2">核心目標</div>
+                        <div class="text-sm text-gray-600">
+                            <ul class="space-y-1">
+                                <li>經濟效益</li>
+                                <li>法律合法</li>
+                                <li>倫理價值</li>
+                                <li>社會公益</li>
+                                <li>環境永續</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Layer 3: Causes -->
+                    <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-lg text-center shadow-sm">
+                        <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 font-bold">3</div>
+                        <div class="font-bold text-indigo-900 text-lg mb-2">風險成因</div>
+                        <div class="text-sm text-gray-600 space-y-2">
+                            <div>
+                                <span class="font-semibold">資料階段</span><br>偏見、隱私、錯誤
+                            </div>
+                            <div>
+                                <span class="font-semibold">建模階段</span><br>黑箱、誤差、偏誤
+                            </div>
+                            <div>
+                                <span class="font-semibold">決策階段</span><br>濫用、因果誤判
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Layer 4: Means -->
+                    <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-lg text-center shadow-sm">
+                        <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 font-bold">4</div>
+                        <div class="font-bold text-indigo-900 text-lg mb-2">治理手段</div>
+                        <div class="text-sm text-gray-600 space-y-2">
+                            <div>
+                                <span class="font-semibold text-yellow-600">技術面</span><br>
+                                XAI, 隱私計算, 偏見檢測
+                            </div>
+                            <div>
+                                <span class="font-semibold text-yellow-600">非技術面</span><br>
+                                法規, 教育, 治理機制
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-8">
+                <p class="text-gray-600 text-lg">
+                    依據上述架構，本中心將 AI 生命週期劃分為三個關鍵審查模組，確保從數據源頭到社會影響的全面合法且符合社會倫理價值及規範。
+                </p>
+
+                <!-- SRAI Modules Detail -->
+                <div class="grid lg:grid-cols-3 gap-6">
+                    
+                    <!-- Module 1: Data Phase -->
+                    <div class="srai-phase-card bg-blue-50 border-blue-500 p-6 rounded-lg">
+                        <div class="flex items-center mb-4">
+                            <div class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">1</div>
+                            <h3 class="text-xl font-bold text-blue-800">模組一：隱私與資料治理</h3>
+                        </div>
+                        <div class="text-sm font-semibold text-blue-600 mb-2 uppercase tracking-wide">Data Phase (資料階段)</div>
+                        <p class="text-gray-700 mb-4">關注數據收集與處理的合法性、代表性與安全性，即「前處理 (Pre-processing)」。</p>
+                        <ul class="list-disc list-inside text-sm text-gray-600 space-y-2 bg-white p-4 rounded-md shadow-sm">
+                            <li><strong>資料可得性與代表性：</strong>數據是否涵蓋多元群體？</li>
+                            <li><strong>資料偏誤與錯誤資訊：</strong>來源是否存在歷史偏見？</li>
+                            <li><strong>資料隱私 (Data Privacy)：</strong>是否取得知情同意？</li>
+                            <li><strong>資料安全 (Data Security)：</strong>儲存與傳輸是否加密？</li>
+                        </ul>
+                    </div>
+
+                    <!-- Module 2: Modeling Phase -->
+                    <div class="srai-phase-card bg-indigo-50 border-indigo-500 p-6 rounded-lg">
+                        <div class="flex items-center mb-4">
+                            <div class="bg-indigo-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">2</div>
+                            <h3 class="text-xl font-bold text-indigo-800">模組二：透明性與可解釋性</h3>
+                        </div>
+                        <div class="text-sm font-semibold text-indigo-600 mb-2 uppercase tracking-wide">Modeling Phase (建模階段)</div>
+                        <p class="text-gray-700 mb-4">關注演算法的設計邏輯與黑箱問題，即「中處理 (In-processing)」。</p>
+                        <ul class="list-disc list-inside text-sm text-gray-600 space-y-2 bg-white p-4 rounded-md shadow-sm">
+                            <li><strong>測量誤差：</strong>變數定義是否準確？</li>
+                            <li><strong>演算法偏誤 (Algorithmic Bias)：</strong>模型是否放大歧視？</li>
+                            <li><strong>黑箱 AI 問題：</strong>決策邏輯是否可被人類理解 (XAI)？</li>
+                            <li><strong>模型校準：</strong>參數設定是否合理？</li>
+                        </ul>
+                    </div>
+
+                    <!-- Module 3: Application & Implication Phase -->
+                    <div class="srai-phase-card bg-purple-50 border-purple-500 p-6 rounded-lg">
+                        <div class="flex items-center mb-4">
+                            <div class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-3">3</div>
+                            <h3 class="text-xl font-bold text-purple-800">模組三：結果公平性與社會影響</h3>
+                        </div>
+                        <div class="text-sm font-semibold text-purple-600 mb-2 uppercase tracking-wide">App. & Implication (應用與影響)</div>
+                        <p class="text-gray-700 mb-4">關注決策產出後的實際衝擊與責任歸屬，即「後處理 (Post-processing)」。</p>
+                        <ul class="list-disc list-inside text-sm text-gray-600 space-y-2 bg-white p-4 rounded-md shadow-sm">
+                            <li><strong>相關 vs 因果：</strong>避免將統計相關誤認為因果關係。</li>
+                            <li><strong>人類能動性 (Human Agency)：</strong>是否有「人」在迴路中監督？</li>
+                            <li><strong>惡意 AI 使用：</strong>防範深偽 (Deepfake) 與詐騙。</li>
+                            <li><strong>成效評估：</strong>對經濟、社會與環境的長期影響。</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- 6. AI 公平性檢定 (Fairness Check) - 新增頁面 (已修正公式顯示問題) -->
-        <section id="fairness-check" class="page-content hidden">
-            <h2 class="text-4xl font-extrabold text-gray-900 mb-8 border-b-2 pb-2 text-purple-700">AI 公平性檢定：核心量化指標</h2>
-            <p class="text-xl mb-6 text-gray-600">為確保 AI 決策的公正性，本中心採用多種 **Fairness Metrics**（公平性指標）進行量化評估，避免對特定受保護群體造成系統性不利。</p>
+        <!-- 2. AI 倫理審驗流程 -->
+        <section id="process" class="content-section">
+            <h2 class="text-4xl font-bold text-indigo-700 mb-6 border-b-4 border-indigo-200 pb-2">AI 倫理審驗流程標準作業程序</h2>
+
+            <div class="space-y-8">
+                 <p class="text-gray-600 text-lg">本中心依據 SRAI 模型的生命週期概念，設計了五階段的嚴謹審驗流程，確保從初始申請到後續監督的完整治理。</p>
+
+                <!-- Flowchart Container -->
+                <div class="relative">
+                    <!-- Connecting Line (Desktop) -->
+                    <div class="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-gray-200 -z-10 transform -translate-y-1/2"></div>
+                    
+                    <div class="grid md:grid-cols-5 gap-4">
+                        <!-- Stage 1 -->
+                        <div class="bg-white border-2 border-green-500 p-4 rounded-xl shadow-lg text-center relative group cursor-pointer hover:bg-green-50 transition" onclick="showProcessDetail(1)">
+                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">STEP 1</div>
+                            <div class="font-bold text-green-800 text-lg mb-2">初始申請</div>
+                            <div class="text-xs text-gray-600 text-left space-y-1">
+                                <div>• 應用範疇說明</div>
+                                <div>• 訓練資料概述</div>
+                                <div>• 風險自評問卷</div>
+                            </div>
+                        </div>
+
+                        <!-- Stage 2 -->
+                        <div class="bg-white border-2 border-yellow-500 p-4 rounded-xl shadow-lg text-center relative group cursor-pointer hover:bg-yellow-50 transition" onclick="showProcessDetail(2)">
+                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">STEP 2</div>
+                            <div class="font-bold text-yellow-800 text-lg mb-2">風險分級</div>
+                            <div class="text-xs text-gray-600 text-left space-y-1">
+                                <div>• 對照風險資料庫</div>
+                                <div>• 判定：低/中/高</div>
+                                <div>• 決定審查深度</div>
+                            </div>
+                        </div>
+
+                        <!-- Stage 3 -->
+                        <div class="bg-white border-2 border-blue-600 p-4 rounded-xl shadow-lg text-center relative group cursor-pointer hover:bg-blue-50 transition transform scale-105 ring-2 ring-blue-200" onclick="showProcessDetail(3)">
+                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">CORE</div>
+                            <div class="font-bold text-blue-800 text-lg mb-2">多面向審查</div>
+                            <div class="text-xs text-gray-600 text-left space-y-1">
+                                <div>• 前處理 (資料)</div>
+                                <div>• 中處理 (模型)</div>
+                                <div>• 後處理 (結果)</div>
+                            </div>
+                        </div>
+
+                        <!-- Stage 4 -->
+                        <div class="bg-white border-2 border-purple-500 p-4 rounded-xl shadow-lg text-center relative group cursor-pointer hover:bg-purple-50 transition" onclick="showProcessDetail(4)">
+                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-purple-500 text-white text-xs px-2 py-1 rounded-full">STEP 4</div>
+                            <div class="font-bold text-purple-800 text-lg mb-2">結論與回饋</div>
+                            <div class="text-xs text-gray-600 text-left space-y-1">
+                                <div>• 評估通過</div>
+                                <div>• 限期改善</div>
+                                <div>• 不建議使用</div>
+                            </div>
+                        </div>
+
+                        <!-- Stage 5 -->
+                        <div class="bg-white border-2 border-red-500 p-4 rounded-xl shadow-lg text-center relative group cursor-pointer hover:bg-red-50 transition" onclick="showProcessDetail(5)">
+                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">STEP 5</div>
+                            <div class="font-bold text-red-800 text-lg mb-2">後設監督</div>
+                            <div class="text-xs text-gray-600 text-left space-y-1">
+                                <div>• 定期追蹤報告</div>
+                                <div>• 異常事件通報</div>
+                                <div>• 群眾回饋機制</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Process Description -->
+                <div id="process-details" class="mt-8 bg-gray-50 p-6 rounded-xl border-t-2 border-gray-200">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">審查階段詳解 (SRAI 模組應用)</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="border-l-4 border-blue-600 pl-4">
+                            <h4 class="font-bold text-blue-800">核心階段：多面向審查 (Multi-faceted Review)</h4>
+                            <p class="text-sm text-gray-600 mb-2">此階段對應 SRAI 模型的三大模組，針對高風險系統進行深度檢驗：</p>
+                            <div class="grid md:grid-cols-3 gap-4 mt-3">
+                                <div class="bg-white p-3 rounded shadow-sm">
+                                    <div class="font-bold text-sm mb-1">1. 前處理 (Pre-processing)</div>
+                                    <div class="text-xs text-gray-500">對應：隱私與資料治理</div>
+                                    <ul class="text-xs list-disc list-inside mt-1">
+                                        <li>隱私影響評估 (PIA)</li>
+                                        <li>資料偏誤檢測 (Bias Detection)</li>
+                                        <li>群體代表性矩陣</li>
+                                    </ul>
+                                </div>
+                                <div class="bg-white p-3 rounded shadow-sm">
+                                    <div class="font-bold text-sm mb-1">2. 中處理 (In-processing)</div>
+                                    <div class="text-xs text-gray-500">對應：透明性與可解釋性</div>
+                                    <ul class="text-xs list-disc list-inside mt-1">
+                                        <li>模型透明度文件</li>
+                                        <li>可解釋 AI 技術 (SHAP, LIME)</li>
+                                        <li>演算法偏見偵測</li>
+                                    </ul>
+                                </div>
+                                <div class="bg-white p-3 rounded shadow-sm">
+                                    <div class="font-bold text-sm mb-1">3. 後處理 (Post-processing)</div>
+                                    <div class="text-xs text-gray-500">對應：結果公平性與影響</div>
+                                    <ul class="text-xs list-disc list-inside mt-1">
+                                        <li>Fairness Metrics (DIR, EOD)</li>
+                                        <li>使用者體驗測試</li>
+                                        <li>法規合法審查</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-bold text-gray-700">風險分級參考標準</h4>
+                                <ul class="text-sm text-gray-600 list-disc list-inside">
+                                    <li><strong>低風險：</strong>簡化審查，主要進行適法性檢核。</li>
+                                    <li><strong>中風險：</strong>標準審查，需提交 Robustness Report。</li>
+                                    <li><strong>高風險：</strong>深度審查，需通過完整三階段模組檢驗。</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-700">改善與監督策略</h4>
+                                <ul class="text-sm text-gray-600 list-disc list-inside">
+                                    <li><strong>改善策略：</strong>資料遮蔽、特徵轉換、模型參數校準。</li>
+                                    <li><strong>公眾監督：</strong>建立「AI倫理評估公開資料庫」與通報平台。</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 審查申請 (Mock Form) -->
+        <section id="application" class="content-section">
+            <h2 class="text-4xl font-bold text-indigo-700 mb-6 border-b-4 border-indigo-200 pb-2">審查申請</h2>
+
+            <!-- Online Application Form -->
+            <div class="space-y-6">
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 text-sm text-yellow-800 rounded-lg">
+                    <p class="font-bold">注意：請務必詳實填寫，此資料將用於風險分級判斷。</p>
+                </div>
+
+                <form class="space-y-4 p-6 bg-white rounded-lg shadow-md border border-gray-200">
+                    
+                    <!-- 申請單位名稱 -->
+                    <div>
+                        <label for="applicant-unit" class="block text-sm font-medium text-gray-700">申請單位名稱</label>
+                        <input type="text" id="applicant-unit" name="applicant-unit" required class="form-input" placeholder="請輸入單位全稱">
+                    </div>
+                    
+                    <!-- AI 項目名稱 -->
+                    <div>
+                        <label for="ai-project-name" class="block text-sm font-medium text-gray-700">AI 項目名稱</label>
+                        <input type="text" id="ai-project-name" name="ai-project-name" required class="form-input" placeholder="請輸入 AI 系統或專案名稱">
+                    </div>
+                    
+                    <!-- 應用領域說明 -->
+                    <div>
+                        <label for="application-domain" class="block text-sm font-medium text-gray-700">應用領域說明 (請參照審查範圍，如：教育、高齡照護)</label>
+                        <input type="text" id="application-domain" name="application-domain" required class="form-input" placeholder="請輸入應用領域">
+                    </div>
+
+                    <!-- 專案預估風險等級 -->
+                    <div>
+                        <label for="risk-level" class="block text-sm font-medium text-gray-700">專案預估風險等級 (依據您的風險自評問卷結果選填)</label>
+                        <select id="risk-level" name="risk-level" required class="form-input">
+                            <option value="low">低風險 (簡化審查)</option>
+                            <option value="medium">中風險 (標準審查)</option>
+                            <option value="high">高風險 (深度審查)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 聯絡電子郵件 -->
+                    <div>
+                        <label for="contact-email" class="block text-sm font-medium text-gray-700">聯絡電子郵件</label>
+                        <input type="email" id="contact-email" name="contact-email" required class="form-input" placeholder="example@email.com">
+                    </div>
+                    
+                    <!-- 應繳交文件 (初始申請階段) - Checkboxes -->
+                    <div class="pt-2">
+                        <h4 class="text-sm font-bold text-gray-700 mb-2">應繳交文件 (初始申請階段)</h4>
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <input id="doc-scope" name="document-required" type="checkbox" checked disabled class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                <label for="doc-scope" class="ml-3 block text-sm text-gray-700">AI 系統應用範疇說明 (目標對象、使用情境)</label>
+                            </div>
+                            <div class="flex items-center">
+                                <input id="doc-data" name="document-required" type="checkbox" checked disabled class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                <label for="doc-data" class="ml-3 block text-sm text-gray-700">訓練資料概述 (來源、規模、處理方式)</label>
+                            </div>
+                            <div class="flex items-center">
+                                <input id="doc-risk" name="document-required" type="checkbox" checked disabled class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                <label for="doc-risk" class="ml-3 block text-sm text-gray-700">AI 風險自我評估問卷 (必填)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center pt-4">
+                        <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                            提交審查申請
+                        </button>
+                    </div>
+                </form>
+
+                <!-- 審查資源下載 -->
+                <div class="mt-8 p-6 bg-indigo-50 rounded-xl shadow-inner border border-indigo-200">
+                    <h3 class="text-xl font-bold text-indigo-800 mb-3">審查資源下載</h3>
+                    <p class="text-sm text-gray-700 mb-4">下載倫理自評問卷與文件準備範本，加速您的申請流程。</p>
+                    <div class="space-y-2 text-sm font-medium">
+                        <a href="#" onclick="alert('模擬下載：AI 風險自我評估問卷 PDF')" class="flex items-center text-blue-600 hover:text-blue-800 transition">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V17a2 2 0 01-2 2z"></path></svg>
+                            [PDF] AI 風險自我評估問卷
+                        </a>
+                        <a href="#" onclick="alert('模擬下載：技術文件說明範本 DOCX')" class="flex items-center text-blue-600 hover:text-blue-800 transition">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-3-3v6M17 16l4 4M7 8l-4 4m0 0l4 4m-4-4h18"></path></svg>
+                            [DOCX] 技術文件說明範本
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 審核進度查詢 -->
+                <div class="mt-8 p-6 bg-white rounded-xl shadow-md border border-gray-200">
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">審核進度查詢</h3>
+                    <p class="text-sm text-gray-600 mb-4">輸入您的申請編號追蹤狀態。</p>
+                    <div class="flex space-x-3">
+                        <input type="text" id="application-id-query" class="form-input flex-grow" placeholder="請輸入申請編號 (如: AIC2025001)">
+                        <button type="button" onclick="alert('模擬查詢：正在查找申請編號 ' + document.getElementById('application-id-query').value)" class="py-2 px-6 bg-indigo-500 text-white font-medium rounded-md shadow hover:bg-indigo-600 transition-colors whitespace-nowrap">
+                            查詢
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 4. AI 風險資料庫 -->
+        <section id="risk-db" class="content-section">
+            <h2 class="text-4xl font-bold text-indigo-700 mb-6 border-b-4 border-indigo-200 pb-2">AI 風險資料庫：高風險應用案例</h2>
+            <div class="space-y-6">
+                <p class="text-gray-600 text-lg">本資料庫聚焦於對「脆弱族群 (中小學生與高齡者)」 具潛在高風險的應用場景，模擬 MIT AIR 結構提供詳細風險分類。</p>
+                <input type="text" id="risk-search" onkeyup="filterRiskData()" placeholder="搜尋案例..." class="w-full p-2 border border-gray-300 rounded-lg shadow-sm">
+                <div class="overflow-x-auto rounded-lg shadow-md border border-gray-200">
+                    <table id="risk-db-table" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-indigo-100">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-bold text-indigo-800 no-wrap">案例編號</th>
+                                <th class="px-4 py-3 text-left font-bold text-indigo-800 no-wrap">事件/標題</th>
+                                <th class="px-4 py-3 text-left font-bold text-indigo-800 no-wrap">領域</th>
+                                <th class="px-4 py-3 text-left font-bold text-indigo-800 no-wrap">發布日期</th>
+                                <th class="px-4 py-3 text-left font-bold text-indigo-800 no-wrap">核心風險類別</th>
+                                <th class="px-4 py-3 text-left font-bold text-indigo-800 no-wrap">危害類型</th>
+                                <th class="px-4 py-3 text-left font-bold text-indigo-800 no-wrap">嚴重性</th>
+                                <th class="px-4 py-3 text-left font-bold text-indigo-800 no-wrap">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="risk-data-body" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. AI 法規資料庫 -->
+        <section id="law-db" class="content-section">
+            <h2 class="text-4xl font-bold text-indigo-700 mb-6 border-b-4 border-indigo-200 pb-2">AI 法規資料庫</h2>
+            <div class="space-y-6">
+                <p class="text-gray-600 text-lg">收錄國際主要經濟體及國內關於 AI 治理、隱私、智慧財產權與人權相關的法律規範。</p>
+                <input type="text" id="law-search" onkeyup="filterLawData()" placeholder="搜尋法規..." class="w-full p-2 border border-gray-300 rounded-lg shadow-sm">
+                <div class="overflow-x-auto rounded-lg shadow-md border border-gray-200">
+                    <table id="law-db-table" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-indigo-100">
+                            <tr><th class="px-4 py-3 text-left font-bold text-indigo-800">地區</th><th class="px-4 py-3 text-left font-bold text-indigo-800">法規名稱</th><th class="px-4 py-3 text-left font-bold text-indigo-800">日期</th><th class="px-4 py-3 text-left font-bold text-indigo-800">核心重點</th><th class="px-4 py-3 text-left font-bold text-indigo-800">關鍵權益</th></tr>
+                        </thead>
+                        <tbody id="law-data-body" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. AI 公平性檢定 -->
+        <section id="fairness-check" class="content-section">
+            <h2 class="text-4xl font-bold text-indigo-700 mb-6 border-b-4 border-indigo-200 pb-2">AI 公平性檢定：量化分析工具</h2>
             
-            <div class="flex justify-center mb-8">
-                <div class="w-full bg-purple-50 p-6 rounded-2xl shadow-inner border-purple-300 border-2">
-                    <p class="font-bold text-lg text-purple-800">審查工具：AI公平性指標 (Fairness Metrics)</p>
-                    <p class="text-sm text-gray-600 mt-2">這些指標旨在衡量模型在不同受保護屬性（如：性別 A、種族等）下的表現差異。</p>
+            <!-- 公平性指標定義 (已置頂) -->
+            <div class="mb-8 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">公平性核心指標定義 (Fairness Metrics)</h3>
+                <div class="grid md:grid-cols-2 gap-6 text-sm">
+                    <!-- 1. 差異影響比率 (DIR) -->
+                    <div>
+                        <h4 class="font-bold text-indigo-700">1. 差異影響比率 (Disparate Impact Ratio, DIR)</h4>
+                        <p class="text-gray-600 mb-1">衡量弱勢群體相對於優勢群體獲得有利結果的機率比值。若 $DIR < 0.8$ 則通常被視為存在不利影響。</p>
+                        <div class="math-code">DIR = P(Ŷ=1 | A = 弱勢群體) / P(Ŷ=1 | A = 優勢群體)</div>
+                        <p class="text-xs text-gray-500 mt-1">標準：$DIR \ge 0.8$ (80% 法則)。$Y\_pred$ 為模型預測值。</p>
+                    </div>
+
+                    <!-- 2. 人口統計對等距離 (DPD) -->
+                    <div>
+                        <h4 class="font-bold text-indigo-700">2. 人口統計對等距離 (Demographic Parity Distance, DPD)</h4>
+                        <p class="text-gray-600 mb-1">衡量各群體獲得正向預測機率與整體平均機率的偏差總和。值越小，表示群體間差異越小。</p>
+                        <div class="math-code">DPD = $\Sigma_i$ [ | P(Ŷ = 1 | A = $a_i$) - P(Ŷ = 1) | ]</div>
+                        <p class="text-xs text-gray-500 mt-1">其中 $A$ 為受保護屬性，$a_i$ 為不同群體的屬性值。</p>
+                    </div>
+                    
+                    <!-- 3. 機會均等距離 (EOD) -->
+                    <div>
+                        <h4 class="font-bold text-indigo-700">3. 機會均等距離 (Equalized Odds Distance, EOD)</h4>
+                        <p class="text-gray-600 mb-1">同時考量真實正向率 (True Positive Rate, TPR) 和錯誤正向率 (False Positive Rate, FPR) 在群體間的差異。</p>
+                        <div class="math-code">EOD = $\Sigma_i$ [ |TPR$_{a_i}$ - TPR| + |FPR$_{a_i}$ - FPR| ]</div>
+                        <p class="text-xs text-gray-500 mt-1">TPR: 真正率, FPR: 偽正率。值越小表示機會越均等。</p>
+                    </div>
+
+                    <!-- 4. 統計對等 (連續數值) -->
+                    <div>
+                        <h4 class="font-bold text-indigo-700">4. 統計對等 (Statistical Parity for Continuous Outcomes)</h4>
+                        <p class="text-gray-600 mb-1">適用於連續數值預測的模型，要求不同群體的預測結果在期望值和變異數上均相等。</p>
+                        <div class="math-code">E[Ŷ | A = a] = E[Ŷ | A = a']</div>
+                        <div class="math-code">Var[Ŷ | A = a] = Var[Ŷ | A = a']</div>
+                        <p class="text-xs text-gray-500 mt-1">$E[]$ 為期望值（平均值），$Var[]$ 為變異數（分散度）。</p>
+                    </div>
                 </div>
+                <p class="text-gray-600 mt-4 text-base font-bold">請使用以下工具，對 AI 模型在特定參數下的公平性進行模擬檢測。</p>
             </div>
 
-            <div class="grid lg:grid-cols-2 gap-8">
-                
-                <!-- 差異影響比率 (Disparate Impact Ratio, DIR) -->
-                <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-500">
-                    <h3 class="text-xl font-bold mb-3 text-purple-700">1. 差異影響比率 (DIR)</h3>
-                    <p class="text-sm text-gray-600 mb-4">衡量弱勢群體獲得正向結果的機率，與優勢群體獲得正向結果的機率之比值。若 $DIR \lt 0.8$ 則通常被視為存在不利影響。</p>
-                    <div class="bg-gray-100 p-4 rounded-lg overflow-x-auto font-mono">
-                        <code class="block whitespace-pre-wrap text-sm text-gray-800">DIR = P(Y_pred = 1 | A = 弱勢群體) / P(Y_pred = 1 | A = 優勢群體)</code>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-2">標準：$DIR \\ge 0.8$ (80% 法則)。$Y\_pred$ 為模型預測值。</p>
+            <div class="space-y-8">
+                <!-- 步驟 1 -->
+                <div class="bg-indigo-50 p-6 rounded-xl shadow border border-indigo-200">
+                    <h3 class="text-lg font-semibold text-indigo-700 mb-4">步驟 1: 數據準備</h3>
+                    <button onclick="handleFileUpload()" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded shadow hover:bg-indigo-700 transition">上傳訓練數據 (模擬)</button>
+                    <p id="upload-status" class="mt-2 text-sm text-green-600 hidden">✅ 數據已模擬載入成功。</p>
                 </div>
 
-                <!-- 人口統計對等距離 (Demographic Parity Distance, DPD) -->
-                <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-500">
-                    <h3 class="text-xl font-bold mb-3 text-purple-700">2. 人口統計對等距離 (DPD)</h3>
-                    <p class="text-sm text-gray-600 mb-4">衡量各群體獲得正向預測機率與整體平均機率的偏差總和。值越小，表示群體間差異越小。</p>
-                    <div class="bg-gray-100 p-4 rounded-lg overflow-x-auto font-mono">
-                        <code class="block whitespace-pre-wrap text-sm text-gray-800">DPD = Sum(i) [ | P(Y_pred = 1 | A = a_i) - P(Y_pred = 1) | ]</code>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-2">其中 $A$ 為受保護屬性，$a_i$ 為不同群體的屬性值。</p>
-                </div>
-
-                <!-- 機會均等距離 (Equalized Odds Distance, EOD) -->
-                <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-500">
-                    <h3 class="text-xl font-bold mb-3 text-purple-700">3. 機會均等距離 (EOD)</h3>
-                    <p class="text-sm text-gray-600 mb-4">同時考量真實正向率 (True Positive Rate, TPR) 和錯誤正向率 (False Positive Rate, FPR) 在群體間的差異。</p>
-                    <div class="bg-gray-100 p-4 rounded-lg overflow-x-auto font-mono">
-                        <code class="block whitespace-pre-wrap text-sm text-gray-800">EOD = Sum(i) [ |TPR_a_i - TPR| + |FPR_a_i - FPR| ]</code>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-2">TPR: 真正率, FPR: 偽正率。值越小表示機會越均等。</p>
-                </div>
-
-                <!-- 統計對等 (Statistical Parity for Continuous Outcomes) -->
-                <div class="bg-white p-6 rounded-xl shadow-lg border-l-4 border-purple-500">
-                    <h3 class="text-xl font-bold mb-3 text-purple-700">4. 統計對等 (連續數值)</h3>
-                    <p class="text-sm text-gray-600 mb-4">適用於連續數值預測的模型，要求不同群體的預測結果在期望值和變異數上均相等。</p>
-                    <div class="bg-gray-100 p-4 rounded-lg overflow-x-auto font-mono">
-                        <code class="block whitespace-pre-wrap text-sm text-gray-800">E[Y_pred | A = a] = E[Y_pred | A = a']
-Var[Y_pred | A = a] = Var[Y_pred | A = a']</code>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-2">$E[]$ 為期望值（平均值），$Var[]$ 為變異數（分散度）。</p>
-                </div>
-            </div>
-
-            <div class="space-y-8 mt-12">
-                <p class="text-gray-600 text-lg">請使用以下工具，對 AI 模型在特定參數下的公平性進行模擬檢測。</p>
-
-                <!-- 步驟 1: 數據準備與上傳 -->
-                <div class="bg-indigo-50 p-6 rounded-xl shadow-lg border border-indigo-200">
-                    <h3 class="text-2xl font-semibold text-indigo-700 mb-4">步驟 1: 數據準備</h3>
-                    <p class="text-gray-600 mb-4">請上傳包含訓練數據（或 AI 預測結果）的檔案。檔案應包含「受保護屬性」（如性別、年齡）、「結果標籤」（如 0/1）等欄位。</p>
-                    <button id="uploadDataButton" onclick="handleFileUpload()" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-indigo-700 transition">
-                        上傳訓練數據 (模擬)
-                    </button>
-                    <p id="upload-status" class="mt-3 text-sm text-green-600 hidden">✅ 數據已模擬載入成功 (共 1000 筆紀錄)。</p>
-                </div>
-
-                <!-- 步驟 2: 定義公平性參數 -->
-                <div class="bg-yellow-50 p-6 rounded-xl shadow-lg border border-yellow-200">
-                    <h3 class="text-2xl font-semibold text-yellow-700 mb-4">步驟 2: 定義公平性參數</h3>
+                <!-- 步驟 2 -->
+                <div class="bg-yellow-50 p-6 rounded-xl shadow border border-yellow-200">
+                    <h3 class="text-lg font-semibold text-yellow-700 mb-4">步驟 2: 定義參數</h3>
                     <div class="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="protected-attribute" class="block text-sm font-medium text-gray-700">受保護屬性 (Protected Attribute)</label>
-                            <select id="protected-attribute" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500">
-                                <option value="gender">性別 (Gender)</option>
-                                <option value="age">年齡層 (Age Group)</option>
-                                <option value="ethnicity">族裔 (Ethnicity)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="favorable-outcome" class="block text-sm font-medium text-gray-700">有利結果 (Favorable Outcome)</label>
-                            <select id="favorable-outcome" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500">
-                                <option value="1">1 (例如：推甄書審通過)</option>
-                                <option value="0">0 (例如: 推甄書不通過)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="privileged-group" class="block text-sm font-medium text-gray-700">優勢群體 (Unprivileged Group)</label>
-                            <select id="privileged-group" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500">
-                                <option value="male">男 (Male)</option>
-                                <option value="white">白人 (White)</option>
-                                <option value="young">年輕人 (Young)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="unprivileged-group" class="block text-sm font-medium text-gray-700">弱勢群體 (Privileged Group)</label>
-                            <select id="unprivileged-group" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500">
-                                <option value="female">女 (Female)</option>
-                                <option value="minority">少數族裔 (Minority)</option>
-                                <option value="elderly">高齡者 (Elderly)</option>
-                            </select>
-                        </div>
+                        <div><label class="text-sm block">有利結果</label><select class="w-full p-2 border rounded"><option>1 (推甄書審通過)</option><option>0 (推甄書不通過)</option></select></div>
+                        <div><label class="text-sm block">弱勢群體</label><select id="unprivileged-group" class="w-full p-2 border rounded"><option value="female">女</option><option>少數族裔</option></select></div>
+                        <div><label class="text-sm block">優勢群體</label><select id="privileged-group" class="w-full p-2 border rounded"><option value="male">男</option><option>白人</option></select></div>
                     </div>
                 </div>
 
-                <!-- 步驟 3: 執行檢定 -->
-                <div class="bg-red-50 p-6 rounded-xl shadow-lg border border-red-200">
-                    <h3 class="text-2xl font-semibold text-red-700 mb-4">步驟 3: 執行檢定</h3>
-                    <button id="runCheckButton" onclick="runFairnessCheck()" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-red-700 transition transform hover:-translate-y-0.5">
-                        執行公平性與偏差檢定
-                    </button>
+                <!-- 步驟 3 -->
+                <div class="bg-red-50 p-6 rounded-xl shadow border border-red-200">
+                    <h3 class="text-lg font-semibold text-red-700 mb-4">步驟 3: 執行檢定</h3>
+                    <button onclick="runFairnessCheck()" class="bg-red-600 text-white font-bold py-2 px-4 rounded shadow hover:bg-red-700 transition">執行檢定</button>
                 </div>
 
-                <!-- 檢定結果 ( Fairlearn / AIF360 模擬結果) -->
-                <div id="fairness-results-container" class="space-y-6 mt-8 hidden">
-                    <h3 class="text-3xl font-bold text-gray-800 border-b-2 pb-2">檢定結果與數據分佈</h3>
-
-                    <!-- 數據偏差分析 (Data Representation) -->
+                <!-- 結果 -->
+                <div id="fairness-results" class="hidden space-y-6 mt-8">
+                    <h3 class="text-2xl font-bold text-gray-800 border-b pb-2">檢定結果</h3>
+                    
+                    <!-- 數據分佈圖 -->
                     <div class="bg-gray-100 p-4 rounded-lg">
-                        <h4 class="font-semibold text-xl text-gray-700 mb-2">訓練數據偏差分析 (Data Bias Analysis)</h4>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="font-bold text-gray-800"><tr><td>群體</td><td>樣本數 (N)</td><td>數據偏差比例 (%)</td></tr></thead>
-                                <tbody id="bias-table-body" class="text-sm text-gray-600">
-                                    <!-- 數據由 JS 填充 -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <p class="text-xs italic mt-2">提示: 訓練數據中優勢群體佔比過高，可能導致模型在弱勢群體上表現不佳。</p>
-                        
-                        <!-- 圖表模擬: 群體分佈直方圖 (使用 CSS 模擬) -->
-                        <div class="mt-4 p-3 bg-white border border-gray-300 rounded-md text-center text-sm text-gray-500">
-                            <p class="mb-2">圖表模擬: 群體分佈直方圖</p>
-                            <div class="flex h-6 bg-gray-200 rounded-md overflow-hidden">
-                                <!-- 模擬條狀圖，基於 mockFairnessMetrics: 70% 優勢群體 (綠) / 30% 弱勢群體 (紅) -->
-                                <div class="bg-green-500" style="width: 70%;"></div>
-                                <div class="bg-red-500" style="width: 30%;"></div>
-                            </div>
+                        <h4 class="font-semibold mb-2">數據分佈模擬</h4>
+                        <div class="w-full bg-gray-300 rounded-full h-6 overflow-hidden flex">
+                            <div class="bg-green-500 h-full flex items-center justify-center text-xs text-white" style="width: 70%">優勢群體 70%</div>
+                            <div class="bg-red-500 h-full flex items-center justify-center text-xs text-white" style="width: 30%">弱勢 30%</div>
                         </div>
                     </div>
 
-                    <!-- 量化公平性指標 (Fairness Metrics) -->
-                    <div class="bg-blue-100 p-4 rounded-lg">
-                        <h4 class="font-semibold text-xl text-blue-700 mb-2">量化公平性指標 (Fairness Metrics)</h4>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="font-bold text-blue-900"><tr><td class="w-1/2">指標</td><td>計算值</td><td>倫理判斷</td></tr></thead>
-                                <tbody id="metrics-table-body" class="text-sm text-gray-700">
-                                    <!-- 數據由 JS 填充 -->
-                                </tbody>
-                            </table>
-                        </div>
-                        <p class="text-xs italic mt-2">提示: 差異影響比率 (DIR) 應高於 0.8 (80% 法則) 才能被視為公平。</p>
-                        
-                        <!-- 圖表模擬: DIR 儀表板 (使用 CSS 模擬) -->
-                        <div class="mt-4 p-3 bg-white border border-gray-300 rounded-md text-sm text-gray-500">
-                            <p class="mb-2">儀表板模擬: 差異影響比率 (DIR)</p>
-                            <div class="flex h-4 bg-gray-200 rounded-full overflow-hidden relative">
-                                <!-- DIR Target: 0.8 (80% of the bar is the target region) -->
-                                <div class="absolute inset-0 bg-red-200" style="width: 80%;"></div>
-                                <div class="absolute inset-0 bg-green-200" style="left: 80%; width: 20%;"></div>
-                                <!-- Mocked Current DIR Value: 0.578 (57.8% of the bar) -->
-                                <div id="dir-gauge" class="absolute h-full bg-red-600 rounded-r-full shadow-lg" style="width: 57.8%;"></div>
-                                <!-- 0.8 Threshold Marker -->
-                                <div class="absolute h-full w-0.5 bg-yellow-500" style="left: 80%; top: 0;"></div>
-                                <span class="absolute text-xs" style="left: 77%; top: 100%; color: #f59e0b;">0.8 (目標)</span>
-                                <span class="absolute text-xs" style="left: 50%; top: -150%; color: #dc2626; font-weight: bold;">0.578 (當前)</span>
+                    <!-- DIR 儀表板 -->
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h4 class="font-semibold mb-2 text-blue-800">差異影響比率 (DIR) 儀表板</h4>
+                        <div class="relative pt-6 pb-2">
+                            <div class="h-4 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="dir-bar" class="h-full bg-red-500 transition-all duration-1000" style="width: 0%"></div>
+                            </div>
+                            <!-- Target Line 0.8 -->
+                            <div class="absolute top-0 bottom-0 w-0.5 bg-black h-full" style="left: 80%"></div>
+                            <div class="absolute -top-1 text-xs font-bold" style="left: 78%">0.8 (及格)</div>
+                            <div class="flex justify-between text-xs mt-1">
+                                <span>0</span>
+                                <span id="dir-value-text" class="font-bold text-red-600">0.00</span>
+                                <span>1.0</span>
                             </div>
                         </div>
+                        <p class="text-xs text-gray-500 mt-2">若紅條未超過黑線 (0.8)，表示存在潛在不公平。</p>
                     </div>
                 </div>
             </div>
-            
         </section>
+
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-gray-500 text-sm border-t pt-6">
+            <p>© 2025 AI 倫理審驗中心 | 台北市和平東路一段129號</p>
+            <p>聯絡我們：contact@ntnu.edu.tw</p>
+        </footer>
 
     </main>
 
-    <!-- 頁腳 (保持不變) -->
-    <footer class="bg-gray-800 text-white mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="grid md:grid-cols-4 gap-8">
-                <div>
-                    <h4 class="text-xl font-bold mb-4 text-blue-400">AI 倫理審驗中心</h4>
-                    <p class="text-sm text-gray-400">致力於推動 AI 的負責任創新與發展。</p>
-                </div>
-                <div>
-                    <h4 class="text-lg font-semibold mb-4">快速連結</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#" onclick="showPage('home')" class="hover:text-blue-400">首頁</a></li>
-                        <li><a href="#" onclick="showPage('ethics')" class="hover:text-blue-400">AI 倫理</a></li>
-                        <li><a href="#" onclick="showPage('process')" class="hover:text-blue-400">審驗流程</a></li>
-                        <li><a href="#" onclick="showPage('application')" class="hover:text-blue-400">審查申請</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="text-lg font-semibold mb-4">資料資源</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#" onclick="showPage('risk-db')" class="hover:text-blue-400">AI 風險資料庫</a></li>
-                        <li><a href="#" onclick="showPage('law-db')" class="hover:text-blue-400">AI 法規資料庫</a></li>
-                        <li><a href="#" onclick="showPage('fairness-check')" class="hover:text-blue-400">公平性檢定</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="text-lg font-semibold mb-4">聯絡我們</h4>
-                    <p class="text-sm text-gray-400">電子郵件: contact@ntnu.edu.tw</p>
-                    <p class="text-sm text-gray-400">電話: (02) 1234-5678</p>
-                    <p class="text-sm text-gray-400 mt-2">地址: 台北市和平東路一段129號</p>
-                </div>
-            </div>
-            <div class="mt-8 pt-6 border-t border-gray-700 text-center">
-                <p class="text-sm text-gray-500">&copy; 2024 AI 倫理審驗中心. All Rights Reserved.</p>
-            </div>
-        </div>
-    </footer>
+    <!-- JavaScript -->
+    <script>
+        // Data
+        const riskData = [
+            {"case_id":"Edu-001","scenario":"個人化學習系統監控","domain":"教育/兒童","date":"2025-06-15","risk_type":"偏見與公平性","hazard_type":"隱私侵犯、學習機會不均、心理壓力","severity":"極高","operation":"查看詳情"},
+            {"case_id":"HR-002","scenario":"升學志願推薦系統偏差","domain":"人力資源/教育","date":"2024-11-20","risk_type":"分類偏誤","hazard_type":"決策不透明、限制多元發展、分類不公","severity":"高","operation":"查看詳情"},
+            {"case_id":"Care-003","scenario":"高齡AI健康監測誤判","domain":"健康照護/高齡","date":"2025-01-10","risk_type":"資料安全、建議準確性","hazard_type":"敏感資料外洩、誤導致健康風險","severity":"極高","operation":"查看詳情"},
+            {"case_id":"Fin-004","scenario":"智能投資顧問透明度不足","domain":"金融服務/銀髮","date":"2024-08-05","risk_type":"透明度不足、詐騙防護","hazard_type":"經濟損失、投資誤導","severity":"高","operation":"查看詳情"},
+            {"case_id":"Gov-005","scenario":"福利資格AI審核不公","domain":"公共服務/社會福利","date":"2025-03-22","risk_type":"模型偏誤、歧視結果","hazard_type":"人權侵犯、不公平決策","severity":"極高","operation":"查看詳情"}
+        ];
+        
+        const lawData = [
+            // 歐盟
+            {"地區":"歐盟","法規名稱":"人工智慧法 (AI Act)","日期":"2024-05","核心重點":"風險分級監管框架","關鍵權益":"禁止不可接受風險AI (如社會評分)"},
+            {"地區":"歐盟","法規名稱":"通用資料保護規則 (GDPR)","日期":"2018","核心重點":"資料主體權利、自動化決策","關鍵權益":"解釋權、拒絕自動化決策"},
+            {"地區":"歐盟","法規名稱":"AI 責任指令 (草案)","日期":"2022","核心重點":"AI 損害賠償責任","關鍵權益":"減輕受害者舉證責任"},
+            {"地區":"歐盟","法規名稱":"數位單一市場著作權指令","日期":"2019","核心重點":"文字與資料探勘 (TDM) 例外","關鍵權益":"權利人可保留權利 (Opt-out)"},
+            
+            // 美國
+            {"地區":"美國","法規名稱":"AI 權利法案藍圖","日期":"2022","核心重點":"五大原則：安全、防歧視、隱私等","關鍵權益":"非約束性指導原則"},
+            {"地區":"美國","法規名稱":"第 14110 號行政命令","日期":"2023-10","核心重點":"安全、可靠且值得信賴的 AI 開發","關鍵權益":"聯邦機構採購與使用規範"},
+            {"地區":"美國","法規名稱":"紐約市地方法 144 號","日期":"2023-07","核心重點":"自動化就業決策工具 (AEDT)","關鍵權益":"強制偏見審計"},
+            
+            // 台灣
+            {"地區":"台灣","法規名稱":"人工智慧基本法草案","日期":"2023 (草案)","核心重點":"產業發展與倫理並重","關鍵權益":"建立AI風險分級與問責機制"},
+            {"地區":"台灣","法規名稱":"個人資料保護法","日期":"2015 (修)","核心重點":"個資蒐集、處理、利用","關鍵權益":"當事人同意權、更正權"},
+            {"地區":"台灣","法規名稱":"行政院生成式 AI 參考指引","日期":"2023","核心重點":"公部門使用規範","關鍵權益":"機密保護、內容標示"},
+            
+            // 亞洲其他
+            {"地區":"中國","法規名稱":"生成式 AI 服務管理暫行辦法","日期":"2023-08","核心重點":"內容安全、社會主義核心價值","關鍵權益":"演算法備案、訓練數據合法"},
+            {"地區":"日本","法規名稱":"著作權法 (修正)","日期":"2018","核心重點":"放寬 AI 機器學習之著作利用","關鍵權益":"促進 AI 產業發展 (第 30-4 條)"},
+            {"地區":"越南","法規名稱":"數位科技產業法 (DTI Law)","日期":"2025","核心重點":"風險分級：高風險與高影響","關鍵權益":"要求 AI 標示與揭露"},
+            
+            // 國際組織
+            {"地區":"OECD","法規名稱":"AI 發展原則","日期":"2019","核心重點":"以人為本、包容性成長","關鍵權益":"國際政策協調基礎"},
+            {"地區":"UNESCO","法規名稱":"AI 倫理建議書","日期":"2021","核心重點":"人權、尊嚴、環境永續","關鍵權益":"教育與文化多樣性保護"}
+        ];
 
+        // Navigation
+        window.showPage = function(pageId) {
+            document.querySelectorAll('.content-section').forEach(s => s.style.display = 'none');
+            
+            // Fix: target element ID should match the pageId exactly since the anchor data-page is set to it
+            const targetElement = document.getElementById(pageId); 
+            if (targetElement) {
+                targetElement.style.display = 'block';
+            } else {
+                // Defensive check if target section is null
+                console.error(`Section not found for pageId: ${pageId}`);
+                return; 
+            }
+
+            document.querySelectorAll('.nav-link').forEach(l => {
+                l.classList.toggle('active-tab', l.getAttribute('data-page') === pageId);
+            });
+        }
+
+        // DB Render
+        window.renderDatabase = function(data, tableId) {
+            const tbody = document.querySelector(`#${tableId} tbody`);
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            // Check if the table is risk-db and has new columns
+            const isRiskDb = tableId.includes('risk');
+            const numColumns = isRiskDb ? 8 : 5; // Risk DB has 8 columns, Law DB has 5
+
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                
+                let htmlContent = '';
+                if (isRiskDb) {
+                    htmlContent = `
+                        <td class="px-4 py-2 text-sm">${item.case_id}</td>
+                        <td class="px-4 py-2 text-sm">${item.scenario}</td>
+                        <td class="px-4 py-2 text-sm">${item.domain}</td>
+                        <td class="px-4 py-2 text-sm">${item.date}</td>
+                        <td class="px-4 py-2 text-sm text-red-600">${item.risk_type}</td>
+                        <td class="px-4 py-2 text-sm">${item.hazard_type}</td>
+                        <td class="px-4 py-2 text-sm font-bold text-red-700">${item.severity}</td>
+                        <td class="px-4 py-2 text-sm"><button onclick="alert('模擬查看：${item.scenario} 的詳細資訊')" class="text-indigo-600 hover:text-indigo-900 font-medium">查看詳情</button></td>
+                    `;
+                } else {
+                    htmlContent = `
+                        <td class="px-4 py-2 text-sm font-bold">${item.地區}</td>
+                        <td class="px-4 py-2 text-sm">${item.法規名稱}</td>
+                        <td class="px-4 py-2 text-sm">${item.日期}</td>
+                        <td class="px-4 py-2 text-sm">${item.核心重點}</td>
+                        <td class="px-4 py-2 text-sm text-blue-600">${item.關鍵權益}</td>
+                    `;
+                }
+                
+                row.innerHTML = htmlContent;
+                tbody.appendChild(row);
+            });
+
+            // Update search result count display (mock implementation)
+            if (isRiskDb) {
+                const countDisplay = document.getElementById('risk-search-count');
+                if (countDisplay) {
+                    countDisplay.innerText = `找到 ${data.length} 筆資料。`;
+                }
+            }
+        }
+
+        window.filterRiskData = function() {
+            const val = document.getElementById('risk-search').value.toLowerCase();
+            const filtered = riskData.filter(i => Object.values(i).join(' ').toLowerCase().includes(val));
+            window.renderDatabase(filtered, 'risk-db-table');
+        }
+        window.filterLawData = function() {
+            const val = document.getElementById('law-search').value.toLowerCase();
+            const filtered = lawData.filter(i => Object.values(i).join(' ').toLowerCase().includes(val));
+            window.renderDatabase(filtered, 'law-db-table');
+        }
+
+        // Fairness Check Logic
+        window.handleFileUpload = function() {
+            alert('模擬數據載入成功！');
+            document.getElementById('upload-status').classList.remove('hidden');
+        }
+
+        window.runFairnessCheck = function() {
+            const container = document.getElementById('fairness-results');
+            container.classList.remove('hidden');
+            
+            // Mock Calculation for DIR (0.65)
+            const dirValue = 0.65;
+            const percentage = dirValue * 100;
+            
+            // Update Bar
+            const bar = document.getElementById('dir-bar');
+            const text = document.getElementById('dir-value-text');
+            
+            // Reset for animation effect
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = percentage + '%';
+                text.innerText = dirValue.toFixed(2);
+                if(dirValue < 0.8) {
+                    bar.classList.remove('bg-green-500');
+                    bar.classList.add('bg-red-500');
+                    text.innerHTML += " (不公平)";
+                } else {
+                    bar.classList.remove('bg-red-500');
+                    bar.classList.add('bg-green-500');
+                }
+            }, 100);
+
+            alert('檢定完成！請查看下方結果儀表板。');
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', function() {
+            window.showPage('landing'); // Default page is now Landing
+            
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = e.target.getAttribute('data-page');
+                    window.showPage(page);
+                    // Manually re-render the databases upon switch to ensure content is fresh
+                    if(page === 'risk-db') window.renderDatabase(riskData, 'risk-db-table');
+                    if(page === 'law-db') window.renderDatabase(lawData, 'law-db-table');
+                });
+            });
+            
+            // Initial load of DB data (important for search field updates)
+            window.renderDatabase(riskData, 'risk-db-table');
+            window.renderDatabase(lawData, 'law-db-table');
+        });
+    </script>
 </body>
 </html>
